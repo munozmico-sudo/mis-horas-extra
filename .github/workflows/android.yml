@@ -1,0 +1,113 @@
+name: Compilar APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Crear proyecto Android
+        run: npx cap add android
+
+      - name: Dar permiso de cámara
+        run: |
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
+
+      - name: Copiar la web a Android
+        run: npx cap sync android
+
+      - name: Usar siempre la misma firma
+        run: |
+          mkdir -p ~/.android
+          base64 -d > ~/.android/debug.keystore <<'LLAVE'
+          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
+          LLAVE
+
+      - name: Compilar APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Renombrar APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk MisHorasExtra.apk
+
+      - name: Guardar APK en Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: MisHorasExtra-apk
+          path: MisHorasExtra.apk
+
+      - name: Publicar APK en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Mis Horas Extra v1.0.${{ github.run_number }}
+          files: MisHorasExtra.apk
+
