@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16233A">
+<title>Mis Horas Extra</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: columna única tipo tarjeta de fichar; sello rojo con las ganancias del mes como único elemento llamativo */
+:root{
+  --bg:#EDF0F4; --paper:#FFFFFF; --ink:#16233A; --muted:#5A6678; --line:#D2D9E2;
+  --stamp:#C3352B; --stamp-soft:#F8E4E1; --ok:#1E7A4C; --ok-soft:#E1F2E8; --warn:#9A6400;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E141E; --paper:#172031; --ink:#E5EAF1; --muted:#95A2B5; --line:#2A364A;
+  --stamp:#F06A5E; --stamp-soft:#3A1F21; --ok:#52C58E; --ok-soft:#173326; --warn:#E3A83C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E141E; --paper:#172031; --ink:#E5EAF1; --muted:#95A2B5; --line:#2A364A;
+  --stamp:#F06A5E; --stamp-soft:#3A1F21; --ok:#52C58E; --ok-soft:#173326; --warn:#E3A83C; color-scheme:dark}
+
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:2rem;line-height:1}
+h2{font-size:1.5rem}
+h3{font-size:1.15rem;font-weight:600}
+.label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+header .sub{color:var(--muted);font-size:.9rem}
+#syncInfo{font-size:.8rem;color:var(--muted)}
+
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:18px 0 20px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+nav button{font:600 .95rem var(--f-display);letter-spacing:.04em;text-transform:uppercase;border:0;background:transparent;color:var(--muted);padding:10px 4px;border-radius:7px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
+
+section.view{display:flex;flex-direction:column;gap:18px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px}
+
+/* Resumen */
+.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.monthpick{display:flex;flex-direction:column;gap:6px}
+.stamp{border:3px solid var(--stamp);color:var(--stamp);border-radius:8px;padding:10px 16px;transform:rotate(-3deg);text-align:center;min-width:150px;background:var(--stamp-soft)}
+.stamp .label{color:var(--stamp)}
+.stamp .big{font:700 2.4rem/1 var(--f-mono);font-variant-numeric:tabular-nums;margin-top:4px;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{border-top:2px solid var(--ink);padding-top:8px;min-width:0}
+.stat .v{font:700 1.35rem var(--f-mono);font-variant-numeric:tabular-nums}
+
+.card-list{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 6px;border-bottom:1px dashed var(--line);white-space:nowrap}
+td.num,th.num{text-align:right}
+tr.rowbtn{cursor:pointer}
+tr.rowbtn:hover td{background:var(--bg)}
+.pill{display:inline-block;font:600 .75rem var(--f-body);padding:2px 8px;border-radius:99px}
+.pill.extra{background:var(--ok-soft);color:var(--ok)}
+.pill.libre{background:var(--stamp-soft);color:var(--stamp)}
+.pill.falta{color:var(--warn);border:1px solid var(--warn)}
+.empty{border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--muted)}
+.empty strong{color:var(--ink)}
+
+/* Formularios */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+input,select,textarea{font:500 1rem var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-width:0}
+input[type=time]{font-family:var(--f-mono);font-size:1.15rem}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{font:600 1rem var(--f-display);letter-spacing:.05em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:11px 16px;border-radius:8px;cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.red{border-color:var(--stamp);color:var(--stamp)}
+.btn.small{padding:6px 10px;font-size:.85rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.calc{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:var(--bg);border-radius:8px;padding:12px}
+.calc .v{font:700 1.1rem var(--f-mono)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:8px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+
+/* Foto */
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--line);border-radius:10px;padding:26px 16px;text-align:center;cursor:pointer;color:var(--muted)}
+.drop strong{color:var(--ink);font-family:var(--f-display);font-size:1.2rem;letter-spacing:.03em;text-transform:uppercase}
+.preview{max-width:100%;max-height:320px;border-radius:8px;display:block;margin:0 auto}
+.seg{display:inline-grid;grid-template-columns:1fr 1fr;border:2px solid var(--ink);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);font:600 1rem var(--f-display);text-transform:uppercase;letter-spacing:.05em;padding:9px 18px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.reading{font:700 2.6rem var(--f-mono);text-align:center}
+.note{font-size:.88rem;color:var(--muted)}
+
+/* Ajustes */
+.sched{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px 10px;align-items:center}
+.sched .day{display:flex;align-items:center;gap:8px;font-weight:600;min-width:110px}
+.sched input[type=checkbox]{width:20px;height:20px;accent-color:var(--ink)}
+.sched input[type=time]{font-size:1rem;padding:8px}
+.sched input:disabled{opacity:.35}
+
+@media (max-width:520px){
+  .hero{grid-template-columns:1fr}
+  .stamp{justify-self:start}
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .stat .v{font-size:1.1rem}
+  .calc{grid-template-columns:1fr 1fr 1fr}
+  .sched .day{min-width:0}
+  .hide-sm{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+textarea{font-family:var(--f-mono);font-size:.8rem;min-height:110px;resize:vertical}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="label">Control de jornada</div>
+      <h1>Mis Horas Extra</h1>
+    </div>
+    <div id="syncInfo">Conectando…</div>
+  </header>
+
+  <nav role="tablist">
+    <button role="tab" data-v="resumen" aria-selected="true">Resumen</button>
+    <button role="tab" data-v="fichar" aria-selected="false">Fichar</button>
+    <button role="tab" data-v="foto" aria-selected="false">Foto</button>
+    <button role="tab" data-v="ajustes" aria-selected="false">Ajustes</button>
+  </nav>
+
+  <!-- RESUMEN -->
+  <section class="view" id="v-resumen">
+    <div class="panel hero">
+      <div class="monthpick">
+        <label class="label" for="mes">Mes</label>
+        <input type="month" id="mes">
+        <div class="note" id="tarifaInfo"></div>
+      </div>
+      <div class="stamp">
+        <div class="label">Ganado en extras</div>
+        <div class="big" id="sGan">0,00 €</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="label">Trabajado</div><div class="v" id="sTrab">0 h 00</div></div>
+      <div class="stat"><div class="label">Horas extra</div><div class="v" id="sExtra">0 h 00</div></div>
+      <div class="stat"><div class="label">Días fichados</div><div class="v" id="sDias">0</div></div>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2>Crear PDF</h2>
+        <span class="note">Para imprimir o compartir</span>
+      </div>
+      <div class="field">
+        <span class="label">Qué incluir</span>
+        <div class="seg" id="pdfTipo" style="width:100%">
+          <button type="button" data-t="extra" aria-pressed="true">Solo horas extra</button>
+          <button type="button" data-t="completo" aria-pressed="false">Horario completo</button>
+        </div>
+        <span class="note" id="pdfDesc">Solo los días con horas extra, con lo ganado cada día.</span>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label class="label" for="pdfNombre">Tu nombre (opcional)</label>
+          <input type="text" id="pdfNombre" autocomplete="name">
+        </div>
+        <div class="field">
+          <label class="label" for="pdfEmpresa">Empresa (opcional)</label>
+          <input type="text" id="pdfEmpresa">
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn primary" id="pdfCompartir" type="button">Crear y compartir PDF</button>
+      </div>
+      <span class="note">Al compartir puedes enviarlo por WhatsApp o correo, guardarlo en Drive o abrirlo con el visor de PDF para imprimir.</span>
+    </div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <h2>Fichajes del mes</h2>
+        <span class="note">Toca un día para editarlo</span>
+      </div>
+      <div id="lista"></div>
+    </div>
+  </section>
+
+  <!-- FICHAR MANUAL -->
+  <section class="view" id="v-fichar" hidden>
+    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+      <h2>Apuntar horas</h2>
+      <div class="field">
+        <label class="label" for="fFecha">Día</label>
+        <input type="date" id="fFecha">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label class="label" for="fEnt">Entrada</label>
+          <input type="time" id="fEnt">
+          <button class="btn small" id="nowEnt" type="button">Fichar entrada ahora</button>
+        </div>
+        <div class="field">
+          <label class="label" for="fSal">Salida</label>
+          <input type="time" id="fSal">
+          <button class="btn small" id="nowSal" type="button">Fichar salida ahora</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="fNota">Nota (opcional)</label>
+        <input type="text" id="fNota" placeholder="Ej.: inventario, cubrir turno…">
+      </div>
+      <div class="calc" id="fCalc"></div>
+      <div class="btns">
+        <button class="btn primary" id="fGuardar" type="button">Guardar día</button>
+        <button class="btn red" id="fBorrar" type="button" hidden>Borrar día</button>
+        <button class="btn red" id="fBorrarOk" type="button" hidden>Sí, borrar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOTO -->
+  <section class="view" id="v-foto" hidden>
+    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+      <h2>Fichar con foto del reloj</h2>
+      <p class="note" style="margin:0">Haz una foto al reloj (de agujas, digital o la pantalla de la máquina de fichar). La app lee la hora y tú la confirmas antes de guardar. Funciona mejor con relojes digitales; para relojes de agujas activa la lectura con Claude en Ajustes.</p>
+      <div class="grid2">
+        <div class="field">
+          <label class="label" for="pFecha">Día</label>
+          <input type="date" id="pFecha">
+        </div>
+        <div class="field">
+          <span class="label">Es la hora de</span>
+          <div class="seg" id="pTipo">
+            <button type="button" data-t="entrada" aria-pressed="true">Entrada</button>
+            <button type="button" data-t="salida" aria-pressed="false">Salida</button>
+          </div>
+        </div>
+      </div>
+      <label class="drop" for="pFile" id="pDrop">
+        <strong>Hacer foto o elegir imagen</strong>
+        <span>En el móvil se abre la cámara</span>
+      </label>
+      <input type="file" id="pFile" accept="image/*" capture="environment" hidden>
+      <img id="pImg" class="preview" alt="Foto del reloj" hidden>
+      <div class="btns" id="pBtns" hidden>
+        <button class="btn primary" id="pLeer" type="button">Leer la hora</button>
+        <button class="btn" id="pOtra" type="button">Otra foto</button>
+      </div>
+      <div id="pRes" hidden style="display:flex;flex-direction:column;gap:10px">
+        <div class="label" style="text-align:center">Hora leída</div>
+        <div class="reading" id="pLeida">--:--</div>
+        <div class="note" id="pNota" style="text-align:center"></div>
+        <div class="field">
+          <label class="label" for="pHora">Corrige si hace falta</label>
+          <input type="time" id="pHora">
+        </div>
+        <button class="btn primary" id="pGuardar" type="button">Guardar</button>
+      </div>
+      <p class="note" id="pAviso" hidden></p>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section class="view" id="v-ajustes" hidden>
+    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+      <h2>Tu horario de trabajo</h2>
+      <p class="note" style="margin:0">Marca los días que trabajas y tu hora de entrada y salida. Lo que trabajes por encima cuenta como extra. Un día no marcado cuenta entero como extra.</p>
+      <div class="sched" id="sched">
+        <span class="label">Día</span><span class="label">Entrada</span><span class="label">Salida</span>
+      </div>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+      <h2>Precio y descanso</h2>
+      <div class="grid2">
+        <div class="field">
+          <label class="label" for="aPrecio">Precio hora extra (€)</label>
+          <input type="number" id="aPrecio" min="0" step="0.01" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label class="label" for="aDesc">Descanso no pagado (min/día)</label>
+          <input type="number" id="aDesc" min="0" step="5" inputmode="numeric">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label class="label" for="aPrecioLibre">Precio hora en día libre (€)</label>
+          <input type="number" id="aPrecioLibre" min="0" step="0.01" inputmode="decimal" placeholder="Igual que la extra">
+        </div>
+        <div class="field">
+          <label class="label" for="aMin">Extra mínima a contar (min)</label>
+          <input type="number" id="aMin" min="0" step="5" inputmode="numeric">
+        </div>
+      </div>
+      <div class="btns"><button class="btn primary" id="aGuardar" type="button">Guardar ajustes</button></div>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+      <h2>Lectura de fotos</h2>
+      <p class="note" style="margin:0">Sin clave, la app usa reconocimiento de texto gratuito en el propio teléfono (bien para relojes digitales y máquinas de fichar). Con una clave de la API de Claude también lee relojes de agujas. La clave se guarda solo en este dispositivo.</p>
+      <div class="field">
+        <label class="label" for="aKey">Clave API de Claude (opcional)</label>
+        <input type="password" id="aKey" placeholder="sk-ant-…" autocomplete="off">
+      </div>
+      <div class="btns"><button class="btn" id="aKeyGuardar" type="button">Guardar clave</button></div>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+      <h2>Copia de seguridad</h2>
+      <p class="note" style="margin:0">Los datos se guardan en este teléfono. Copia el texto y guárdalo (en Drive, en una nota o por correo). Para recuperarlo, pégalo aquí y pulsa Restaurar.</p>
+      <textarea id="aBackup" aria-label="Copia de seguridad"></textarea>
+      <div class="btns">
+        <button class="btn" id="aExport" type="button">Crear copia</button>
+        <button class="btn" id="aCopiar" type="button">Copiar</button>
+        <button class="btn red" id="aImport" type="button">Restaurar</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DCORTO=['dom','lun','mar','mié','jue','vie','sáb'];
+const ORDEN=[1,2,3,4,5,6,0];
+const LS='misHorasExtra.v1';
+
+function defCfg(){
+  const h={};for(let d=0;d<7;d++)h[d]={on:d>=1&&d<=5,ini:'08:00',fin:'16:00'};
+  return {horario:h,precio:15,precioLibre:null,descanso:0,minExtra:0,nombre:'',empresa:''};
+}
+function mergeCfg(v){const c=defCfg();if(!v)return c;
+  if(v.horario)for(let d=0;d<7;d++)if(v.horario[d])c.horario[d]={...c.horario[d],...v.horario[d]};
+  ['precio','precioLibre','descanso','minExtra','nombre','empresa'].forEach(k=>{if(v[k]!==undefined)c[k]=v[k]});return c;}
+
+let cfg=defCfg(), dias={};
+
+/* ---------- utilidades ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const hoyISO=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const ahora=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+const toMin=t=>{if(!t||!/^\d{1,2}:\d{2}$/.test(t))return null;const[h,m]=t.split(':').map(Number);return h*60+m};
+const dur=(a,b)=>{const x=toMin(a),y=toMin(b);if(x==null||y==null)return null;return y>=x?y-x:y+1440-x};
+const fmtH=m=>{m=Math.round(m||0);const s=m<0?'-':'';m=Math.abs(m);return s+Math.floor(m/60)+' h '+pad(m%60)};
+const eur=v=>(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const dow=iso=>new Date(iso+'T12:00:00').getDay();
+
+function calc(fecha,ent,sal){
+  const d=dow(fecha), h=cfg.horario[d], desc=Number(cfg.descanso)||0;
+  const bruto=dur(ent,sal);
+  const r={libre:!h.on,trab:null,prev:0,extra:0,falta:0,gan:0};
+  if(h.on){const p=dur(h.ini,h.fin);r.prev=Math.max(0,(p||0)-desc)}
+  if(bruto==null)return r;
+  r.trab=Math.max(0,bruto-desc);
+  let ex=r.trab-r.prev;
+  if(ex<0){r.falta=-ex;ex=0}
+  if(ex<(Number(cfg.minExtra)||0))ex=0;
+  r.extra=ex;
+  const precio=(!h.on&&cfg.precioLibre!=null&&cfg.precioLibre!=='')?Number(cfg.precioLibre):Number(cfg.precio)||0;
+  r.gan=ex/60*precio;
+  return r;
+}
+
+let toastT;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+
+/* ---------- almacenamiento ---------- */
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify({cfg,dias}))}catch(e){}}
+function loadLocal(){try{const o=JSON.parse(localStorage.getItem(LS)||'null');if(o){cfg=mergeCfg(o.cfg);dias=o.dias||{}}}catch(e){}}
+
+async function guardarDia(doc){dias[doc.fecha]=doc;saveLocal();render();return true}
+async function borrarDia(fecha){delete dias[fecha];saveLocal();render()}
+async function guardarCfg(){saveLocal();render();toast('Ajustes guardados')}
+
+loadLocal();
+$('#syncInfo').textContent='Datos guardados en este dispositivo';
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+
+/* ---------- pestañas ---------- */
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.v)));
+function show(v){
+  document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));
+  document.querySelectorAll('section.view').forEach(s=>s.hidden=s.id!=='v-'+v);
+  if(v==='fichar')loadForm($('#fFecha').value||hoyISO());
+}
+
+/* ---------- resumen ---------- */
+$('#mes').value=hoyISO().slice(0,7);
+$('#mes').addEventListener('change',render);
+function render(){
+  const mes=$('#mes').value||hoyISO().slice(0,7);
+  const fechas=Object.keys(dias).filter(f=>f.startsWith(mes)).sort().reverse();
+  let tT=0,tE=0,tG=0;
+  const rows=fechas.map(f=>{const d=dias[f];const r=calc(f,d.entrada,d.salida);
+    if(r.trab!=null){tT+=r.trab;tE+=r.extra;tG+=r.gan}
+    let est='';
+    if(r.trab==null)est='<span class="pill falta">Falta '+(d.entrada?'salida':'entrada')+'</span>';
+    else if(r.extra>0)est='<span class="pill extra">+'+fmtH(r.extra)+'</span>';
+    else if(r.falta>0)est='<span class="muted">−'+fmtH(r.falta)+'</span>';
+    else est='<span class="muted">—</span>';
+    const dd=new Date(f+'T12:00:00');
+    return '<tr class="rowbtn" data-f="'+f+'"><td><b>'+DCORTO[dd.getDay()]+' '+dd.getDate()+'</b>'+(r.libre?' <span class="pill libre">libre</span>':'')+'</td>'+
+      '<td class="mono">'+(d.entrada||'--:--')+'</td><td class="mono">'+(d.salida||'--:--')+'</td>'+
+      '<td class="num mono hide-sm">'+(r.trab!=null?fmtH(r.trab):'')+'</td><td class="num">'+est+'</td>'+
+      '<td class="num mono">'+(r.gan>0?eur(r.gan):'')+'</td></tr>';});
+  $('#sGan').textContent=eur(tG);
+  $('#sTrab').textContent=fmtH(tT);
+  $('#sExtra').textContent=fmtH(tE);
+  $('#sDias').textContent=fechas.length;
+  $('#tarifaInfo').textContent='Hora extra a '+eur(Number(cfg.precio)||0)+(cfg.precioLibre!=null&&cfg.precioLibre!==''?' · día libre a '+eur(Number(cfg.precioLibre)):'');
+  if(!fechas.length){
+    $('#lista').innerHTML='<div class="empty"><strong>Aún no hay fichajes este mes.</strong><br>Apunta tus horas en <b>Fichar</b> o haz una foto al reloj en <b>Foto</b>.<br><br><span class="note">Ejemplo: con horario de 08:00 a 16:00 y salida a las 18:30, se cuentan 2 h 30 extra; a 15 €/h son 37,50 €.</span></div>';
+  }else{
+    $('#lista').innerHTML='<div class="card-list"><table><thead><tr><th>Día</th><th>Entrada</th><th>Salida</th><th class="num hide-sm">Trabajado</th><th class="num">Extra</th><th class="num">€</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
+    $('#lista').querySelectorAll('tr.rowbtn').forEach(tr=>tr.addEventListener('click',()=>{$('#fFecha').value=tr.dataset.f;show('fichar')}));
+  }
+  updCalc();
+}
+
+/* ---------- fichar manual ---------- */
+$('#fFecha').value=hoyISO();
+function loadForm(f){
+  $('#fFecha').value=f;const d=dias[f]||{};
+  $('#fEnt').value=d.entrada||'';$('#fSal').value=d.salida||'';$('#fNota').value=d.nota||'';
+  $('#fBorrar').hidden=!dias[f];$('#fBorrarOk').hidden=true;updCalc();
+}
+$('#fFecha').addEventListener('change',()=>loadForm($('#fFecha').value));
+['#fEnt','#fSal'].forEach(s=>$(s).addEventListener('input',updCalc));
+$('#nowEnt').addEventListener('click',()=>{$('#fFecha').value=hoyISO();loadForm(hoyISO());$('#fEnt').value=ahora();updCalc()});
+$('#nowSal').addEventListener('click',()=>{const f=hoyISO();if($('#fFecha').value!==f)loadForm(f);$('#fSal').value=ahora();updCalc()});
+function updCalc(){
+  const f=$('#fFecha').value;if(!f){$('#fCalc').innerHTML='';return}
+  const h=cfg.horario[dow(f)];
+  const r=calc(f,$('#fEnt').value,$('#fSal').value);
+  $('#fCalc').innerHTML=
+    '<div><div class="label">Tu horario</div><div class="v">'+(h.on?h.ini+'–'+h.fin:'Libre')+'</div></div>'+
+    '<div><div class="label">Trabajado</div><div class="v">'+(r.trab!=null?fmtH(r.trab):'—')+'</div></div>'+
+    '<div><div class="label">Extra</div><div class="v" style="color:var(--ok)">'+(r.trab!=null?fmtH(r.extra)+'<br>'+eur(r.gan):'—')+'</div></div>';
+}
+$('#fGuardar').addEventListener('click',async()=>{
+  const f=$('#fFecha').value;if(!f){toast('Elige un día');return}
+  const e=$('#fEnt').value,s=$('#fSal').value;
+  if(!e&&!s){toast('Pon al menos la entrada o la salida');return}
+  const prev=dias[f]||{};
+  const ok=await guardarDia({...prev,fecha:f,entrada:e||'',salida:s||'',nota:$('#fNota').value.trim(),origen:prev.origen||'manual'});
+  if(ok){toast('Día guardado');$('#fBorrar').hidden=false}
+});
+$('#fBorrar').addEventListener('click',()=>{$('#fBorrarOk').hidden=false});
+$('#fBorrarOk').addEventListener('click',async()=>{await borrarDia($('#fFecha').value);loadForm($('#fFecha').value);toast('Día borrado')});
+
+/* ---------- foto ---------- */
+let tipo='entrada',blob=null;
+const KEY='misHorasExtra.apikey';
+const getKey=()=>{try{return localStorage.getItem(KEY)||''}catch(e){return ''}};
+$('#pTipo').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tipo=b.dataset.t;$('#pTipo').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))}));
+$('#pFile').addEventListener('change',async e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  blob=await reducir(f);
+  $('#pImg').src=URL.createObjectURL(blob);$('#pImg').hidden=false;
+  $('#pDrop').hidden=true;$('#pBtns').hidden=false;$('#pRes').hidden=true;
+});
+$('#pOtra').addEventListener('click',()=>{$('#pFile').value='';$('#pFile').click()});
+function reducir(file){return new Promise(res=>{
+  const img=new Image();img.onload=()=>{const M=1600;let w=img.naturalWidth,h=img.naturalHeight;const k=Math.min(1,M/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);
+    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+    c.toBlob(b=>res(b||file),'image/jpeg',0.85)};
+  img.onerror=()=>res(file);img.src=URL.createObjectURL(file)})}
+function horarioTxt(){const h=cfg.horario[dow($('#pFecha').value||hoyISO())];return h.on?h.ini+'-'+h.fin:'no definido'}
+function blobB64(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(b)})}
+async function leerConClaude(key){
+  const prompt='La imagen es una foto de un reloj (puede ser de agujas, digital o la pantalla de una máquina de fichar). Lee la hora que marca. Si es de agujas y no se sabe si es mañana o tarde, elige lo más probable para una hora de '+tipo+' al trabajo con horario '+horarioTxt()+'. Responde SOLO con JSON: {"hora":"HH:MM" en 24 h o null si no se ve un reloj, "fecha":"YYYY-MM-DD" o null, "seguridad":"alta"|"media"|"baja", "comentario":"frase corta en español"}';
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:300,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:await blobB64(blob)}},{type:'text',text:prompt}]}]})});
+  if(!r.ok){const t=await r.text();throw new Error(r.status===401?'La clave API no es válida':'Error de la API ('+r.status+')')}
+  const j=await r.json();const txt=(j.content||[]).map(c=>c.text||'').join('');
+  const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('Respuesta no válida');
+  return JSON.parse(m[0]);
+}
+async function leerConOCR(){
+  if(!window.Tesseract)throw new Error('Sin conexión: no se pudo cargar el lector');
+  const {data}=await Tesseract.recognize(blob,'eng',{tessedit_char_whitelist:'0123456789:.hH '});
+  const txt=(data.text||'').replace(/[Oo]/g,'0').replace(/[Il|]/g,'1');
+  const cands=[...txt.matchAll(/(\d{1,2})\s*[:.hH]\s*(\d{2})/g)].map(m=>[+m[1],+m[2]]).filter(([h,m])=>h<24&&m<60);
+  if(!cands.length){const d=txt.match(/\b([01]?\d|2[0-3])([0-5]\d)\b/);if(d)cands.push([+d[1],+d[2]])}
+  if(!cands.length)return {hora:null};
+  const [h,m]=cands[0];
+  return {hora:pad(h)+':'+pad(m),seguridad:'media',comentario:'Leído con reconocimiento de texto. Revísalo.'};
+}
+$('#pLeer').addEventListener('click',async()=>{
+  if(!blob)return;
+  const b=$('#pLeer');b.disabled=true;b.textContent='Leyendo…';
+  try{
+    const key=getKey();
+    const r=key?await leerConClaude(key):await leerConOCR();
+    if(!r||!r.hora){$('#pRes').hidden=true;toast('No se ve la hora. Prueba con otra foto más cerca.');return}
+    $('#pLeida').textContent=r.hora;$('#pHora').value=r.hora;
+    if(r.fecha&&/^\d{4}-\d{2}-\d{2}$/.test(r.fecha))$('#pFecha').value=r.fecha;
+    $('#pNota').textContent=(r.seguridad?'Seguridad '+r.seguridad+'. ':'')+(r.comentario||'');
+    $('#pRes').hidden=false;
+  }catch(e){toast(e.message||'No se pudo leer la foto')}
+  finally{b.disabled=false;b.textContent='Leer la hora'}
+});
+$('#pGuardar').addEventListener('click',async()=>{
+  const f=$('#pFecha').value,h=$('#pHora').value;if(!f||!h){toast('Falta el día o la hora');return}
+  const prev=dias[f]||{fecha:f,entrada:'',salida:'',nota:''};
+  const doc={...prev,fecha:f,origen:'foto'};doc[tipo]=h;
+  if(await guardarDia(doc)){toast((tipo==='entrada'?'Entrada':'Salida')+' guardada: '+h);
+    $('#pRes').hidden=true;$('#pImg').hidden=true;$('#pBtns').hidden=true;$('#pDrop').hidden=false;$('#pFile').value='';blob=null;
+    if(tipo==='entrada')$('#pTipo').querySelector('[data-t=salida]').click();}
+});
+
+/* ---------- ajustes ---------- */
+const sc=$('#sched');
+ORDEN.forEach(d=>{
+  sc.insertAdjacentHTML('beforeend','<label class="day" for="on'+d+'"><input type="checkbox" id="on'+d+'"> '+DIAS[d]+'</label><input type="time" id="ini'+d+'" aria-label="Entrada '+DIAS[d]+'"><input type="time" id="fin'+d+'" aria-label="Salida '+DIAS[d]+'">');
+  $('#on'+d).addEventListener('change',()=>{$('#ini'+d).disabled=$('#fin'+d).disabled=!$('#on'+d).checked});
+});
+function fillAjustes(){
+  ORDEN.forEach(d=>{const h=cfg.horario[d];$('#on'+d).checked=h.on;$('#ini'+d).value=h.ini;$('#fin'+d).value=h.fin;$('#ini'+d).disabled=$('#fin'+d).disabled=!h.on});
+  $('#aPrecio').value=cfg.precio;$('#aDesc').value=cfg.descanso;$('#aMin').value=cfg.minExtra;
+  $('#aPrecioLibre').value=cfg.precioLibre==null?'':cfg.precioLibre;
+}
+$('#aGuardar').addEventListener('click',()=>{
+  ORDEN.forEach(d=>{cfg.horario[d]={on:$('#on'+d).checked,ini:$('#ini'+d).value||'08:00',fin:$('#fin'+d).value||'16:00'}});
+  cfg.precio=Math.max(0,parseFloat($('#aPrecio').value)||0);
+  cfg.descanso=Math.max(0,parseInt($('#aDesc').value)||0);
+  cfg.minExtra=Math.max(0,parseInt($('#aMin').value)||0);
+  const pl=$('#aPrecioLibre').value.trim();cfg.precioLibre=pl===''?null:Math.max(0,parseFloat(pl)||0);
+  guardarCfg();
+});
+
+$('#aKey').value=getKey();
+$('#aKeyGuardar').addEventListener('click',()=>{try{localStorage.setItem(KEY,$('#aKey').value.trim())}catch(e){}toast($('#aKey').value.trim()?'Clave guardada':'Clave borrada')});
+$('#aExport').addEventListener('click',()=>{$('#aBackup').value=JSON.stringify({app:'mis-horas-extra',v:1,fecha:hoyISO(),cfg,dias});toast('Copia creada')});
+$('#aCopiar').addEventListener('click',async()=>{const t=$('#aBackup');if(!t.value)t.value=JSON.stringify({app:'mis-horas-extra',v:1,fecha:hoyISO(),cfg,dias});
+  try{await navigator.clipboard.writeText(t.value);toast('Copiado')}catch(e){t.select();toast('Selecciona y copia el texto')}});
+$('#aImport').addEventListener('click',()=>{
+  try{const o=JSON.parse($('#aBackup').value);if(!o||!o.dias)throw 0;cfg=mergeCfg(o.cfg);dias=o.dias;saveLocal();fillAjustes();$('#pdfNombre').value=cfg.nombre||'';$('#pdfEmpresa').value=cfg.empresa||'';render();toast('Datos restaurados')}
+  catch(e){toast('El texto no es una copia válida')}});
+
+/* ---------- PDF ---------- */
+let pdfTipo='extra';
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+$('#pdfTipo').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{pdfTipo=b.dataset.t;
+  $('#pdfTipo').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  $('#pdfDesc').textContent=pdfTipo==='extra'?'Solo los días con horas extra, con lo ganado cada día.':'Todos los días del mes fichados: entrada, salida, horario, horas trabajadas, extra y ganancias.'}));
+['pdfNombre','pdfEmpresa'].forEach(id=>$('#'+id).addEventListener('change',()=>{cfg.nombre=$('#pdfNombre').value.trim();cfg.empresa=$('#pdfEmpresa').value.trim();saveLocal()}));
+
+function crearPDF(){
+  const J=window.jspdf;if(!J||!J.jsPDF)throw new Error('Sin conexión: no se pudo cargar el creador de PDF');
+  const mes=$('#mes').value||hoyISO().slice(0,7);
+  const [an,mm]=mes.split('-').map(Number);
+  const nomMes=MESES[mm-1]+' de '+an;
+  const doc=new J.jsPDF({unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const INK=[22,35,58],RED=[195,53,43],MUT=[90,102,120];
+  const completo=pdfTipo==='completo';
+  // cabecera
+  doc.setFillColor(...INK);doc.rect(0,0,W,26,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(17);
+  doc.text(completo?'Registro de jornada':'Registro de horas extra',14,12);
+  doc.setFont('helvetica','normal');doc.setFontSize(11);
+  doc.text(nomMes.charAt(0).toUpperCase()+nomMes.slice(1),14,20);
+  let y=34;doc.setTextColor(...INK);doc.setFontSize(10);
+  const nombre=$('#pdfNombre').value.trim(),empresa=$('#pdfEmpresa').value.trim();
+  if(nombre){doc.setFont('helvetica','bold');doc.text('Trabajador: ',14,y);doc.setFont('helvetica','normal');doc.text(nombre,38,y);y+=6}
+  if(empresa){doc.setFont('helvetica','bold');doc.text('Empresa: ',14,y);doc.setFont('helvetica','normal');doc.text(empresa,38,y);y+=6}
+  doc.setTextColor(...MUT);
+  let tarifa='Precio hora extra: '+eur(Number(cfg.precio)||0);
+  if(cfg.precioLibre!=null&&cfg.precioLibre!=='')tarifa+='   ·   Hora en día libre: '+eur(Number(cfg.precioLibre));
+  if(Number(cfg.descanso))tarifa+='   ·   Descanso no pagado: '+cfg.descanso+' min/día';
+  doc.text(tarifa,14,y);y+=4;
+
+  const fechas=Object.keys(dias).filter(f=>f.startsWith(mes)).sort();
+  let tT=0,tE=0,tG=0,nE=0;const body=[];
+  fechas.forEach(f=>{const d=dias[f];const r=calc(f,d.entrada,d.salida);const h=cfg.horario[dow(f)];
+    if(r.trab!=null){tT+=r.trab;tE+=r.extra;tG+=r.gan;if(r.extra>0)nE++}
+    if(!completo&&!(r.extra>0))return;
+    const dd=new Date(f+'T12:00:00');
+    const dia=DCORTO[dd.getDay()]+' '+pad(dd.getDate())+'/'+pad(mm);
+    if(completo)body.push([dia,h.on?h.ini+'–'+h.fin:'Libre',d.entrada||'—',d.salida||'—',r.trab!=null?fmtH(r.trab):'—',r.extra>0?fmtH(r.extra):'—',r.gan>0?eur(r.gan):'—',d.nota||'']);
+    else body.push([dia,d.entrada||'—',d.salida||'—',h.on?'Laborable':'Día libre',fmtH(r.extra),eur(r.gan),d.nota||'']);
+  });
+  if(!body.length)throw new Error(completo?'No hay fichajes en '+nomMes:'No hay horas extra en '+nomMes);
+  const head=completo?[['Día','Horario','Entrada','Salida','Trabajado','Extra','Ganado','Nota']]:[['Día','Entrada','Salida','Tipo de día','Horas extra','Ganado','Nota']];
+  const foot=completo?[['Total','','','',fmtH(tT),fmtH(tE),eur(tG),'']]:[['Total','','','',fmtH(tE),eur(tG),'']];
+  const right=completo?{4:{halign:'right'},5:{halign:'right'},6:{halign:'right'}}:{4:{halign:'right'},5:{halign:'right'}};
+  doc.autoTable({startY:y+4,head,body,foot,theme:'grid',margin:{left:14,right:14},
+    styles:{font:'helvetica',fontSize:completo?8.5:9.5,cellPadding:2,textColor:INK,lineColor:[210,217,226],lineWidth:.2},
+    headStyles:{fillColor:INK,textColor:255,fontStyle:'bold'},
+    footStyles:{fillColor:[237,240,244],textColor:INK,fontStyle:'bold'},
+    columnStyles:Object.assign({},right,{[completo?7:6]:{cellWidth:'auto',fontSize:8,textColor:MUT}}),
+    didParseCell:c=>{if(c.section==='foot'&&Object.keys(right).includes(String(c.column.index)))c.cell.styles.halign='right'}});
+  // resumen
+  let fy=doc.lastAutoTable.finalY+10;
+  if(fy>255){doc.addPage();fy=20}
+  doc.setDrawColor(...RED);doc.setLineWidth(.8);doc.roundedRect(14,fy,W-28,22,2,2,'S');
+  doc.setTextColor(...RED);doc.setFont('helvetica','bold');doc.setFontSize(9);
+  doc.text('TOTAL A COBRAR POR HORAS EXTRA',20,fy+8);
+  doc.setFontSize(18);doc.text(eur(tG),20,fy+17);
+  doc.setTextColor(...INK);doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.text('Horas extra: '+fmtH(tE),W-20,fy+9,{align:'right'});
+  doc.text((completo?'Trabajado: '+fmtH(tT)+'   ·   ':'')+'Días con extra: '+nE,W-20,fy+16,{align:'right'});
+  if(completo){
+    let sy=fy+32;if(sy>250){doc.addPage();sy=20}
+    doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('Horario establecido',14,sy);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...MUT);
+    doc.text(ORDEN.map(d=>{const h=cfg.horario[d];return DCORTO[d]+': '+(h.on?h.ini+'–'+h.fin:'libre')}).join('   ·   '),14,sy+6,{maxWidth:W-28});
+  }
+  // firma y pie
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(...MUT);
+    const hoy=new Date();doc.text('Generado el '+hoy.toLocaleDateString('es-ES')+' con Mis Horas Extra',14,289);
+    doc.text('Página '+i+' de '+n,W-14,289,{align:'right'})}
+  doc.setPage(n);
+  const fn='horas-'+(completo?'jornada':'extra')+'-'+mes+'.pdf';
+  return {doc,fn,titulo:(completo?'Registro de jornada ':'Horas extra ')+nomMes};
+}
+async function compartirPDF(){
+  const b=$('#pdfCompartir');b.disabled=true;b.textContent='Creando…';
+  try{
+    const {doc,fn,titulo}=crearPDF();
+    const cap=window.Capacitor,P=cap&&cap.Plugins;
+    if(cap&&cap.isNativePlatform&&cap.isNativePlatform()&&P&&P.Filesystem&&P.Share){
+      const data=doc.output('datauristring').split(',')[1];
+      const w=await P.Filesystem.writeFile({path:fn,data,directory:'CACHE'});
+      await P.Share.share({title:titulo,files:[w.uri],dialogTitle:'Compartir o imprimir PDF'});
+      return;
+    }
+    const blob=doc.output('blob');const file=new File([blob],fn,{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:titulo});return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;document.body.appendChild(a);a.click();a.remove();
+    toast('PDF descargado');
+  }catch(e){if(e&&(e.name==='AbortError'||/cancel/i.test(e.message||'')))return;toast(e.message||'No se pudo crear el PDF')}
+  finally{b.disabled=false;b.textContent='Crear y compartir PDF'}
+}
+$('#pdfCompartir').addEventListener('click',compartirPDF);
+
+$('#pdfNombre').value=cfg.nombre||'';$('#pdfEmpresa').value=cfg.empresa||'';
+fillAjustes();render();
+})();
+</script>
+</body>
+</html>

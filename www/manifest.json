@@ -1,0 +1,11 @@
+{
+  "name": "Mis Horas Extra",
+  "short_name": "Horas Extra",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EDF0F4",
+  "theme_color": "#16233A",
+  "lang": "es",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
