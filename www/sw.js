@@ -1,4 +1,4 @@
-const CACHE = 'horas-extra-v2';
+const CACHE = 'horas-extra-v3';
 const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => {

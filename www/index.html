@@ -118,6 +118,48 @@ input[type=time]{font-family:var(--f-mono);font-size:1.15rem}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 textarea{font-family:var(--f-mono);font-size:.8rem;min-height:110px;resize:vertical}
+/* Jornada con varios fichajes */
+.toggles{display:flex;flex-direction:column;gap:2px;padding:6px}
+.tgl{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:transparent;border:0;color:var(--ink);text-align:left;padding:10px;border-radius:8px;cursor:pointer;font:inherit}
+.tgl:hover{background:var(--bg)}
+.tgl-txt{display:flex;flex-direction:column;min-width:0}
+.tgl b{font-family:var(--f-display);font-size:1.15rem;letter-spacing:.02em}
+.sw{flex:none;width:48px;height:28px;border-radius:99px;background:var(--line);position:relative;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .2s}
+.tgl[aria-pressed="true"] .sw{background:var(--ok)}
+.tgl[aria-pressed="true"] .sw::after{transform:translateX(20px)}
+.jhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.jhead input{width:auto}
+.counter-box{text-align:center;display:flex;flex-direction:column;gap:2px;padding:4px 0}
+.counter{font-size:clamp(2.6rem,13vw,4.2rem);font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums}
+#jHoras{font-size:1.1rem;color:var(--muted)}
+#jPausaAct{color:var(--warn);font-weight:600;margin-top:4px}
+.jbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.jbtns .btn{padding:15px 10px;font-size:1.05rem}
+.jbtns .wide{grid-column:1/-1}
+.btn.pausa{border-color:var(--warn);color:var(--warn)}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:var(--paper)}
+.btn.redfill{background:var(--stamp);border-color:var(--stamp);color:var(--paper)}
+.jstats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 10px;background:var(--bg);border-radius:8px;padding:12px}
+.jstats > div{min-width:0}
+.jstats .v{font:700 1rem var(--f-mono);font-variant-numeric:tabular-nums}
+.marcas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.marcas li{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.dot.p{background:var(--warn)}.dot.f{background:var(--stamp)}.dot.e{background:var(--ok)}
+.marcas input[type=time]{width:auto;font-size:1rem;padding:6px 8px}
+.del{border:0;background:transparent;color:var(--muted);font-size:1.4rem;line-height:1;cursor:pointer;padding:4px 10px;border-radius:6px}
+.del:hover{color:var(--stamp);background:var(--stamp-soft)}
+.addrow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.addrow input{width:auto}
+.savebar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--stamp-soft);color:var(--stamp);border-radius:8px;padding:10px 12px;font-weight:600}
+.pill.run{background:var(--ok-soft);color:var(--ok)}
+.pill.pau{color:var(--warn);border:1px solid var(--warn)}
+.pill.off{background:var(--bg);color:var(--muted)}
+.chks{display:flex;flex-wrap:wrap;gap:8px 18px}
+.chk{display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer}
+.chk input{width:20px;height:20px;accent-color:var(--ink)}
+@media (max-width:520px){.addrow{grid-template-columns:1fr auto}.addrow select{grid-column:1/-1}.jstats{grid-template-columns:repeat(2,1fr)}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -195,14 +237,66 @@ textarea{font-family:var(--f-mono);font-size:.8rem;min-height:110px;resize:verti
     </div>
   </section>
 
-  <!-- FICHAR MANUAL -->
+  <!-- FICHAR -->
   <section class="view" id="v-fichar" hidden>
-    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+    <div class="panel toggles">
+      <button type="button" class="tgl" id="tMulti" aria-pressed="false">
+        <span class="tgl-txt"><b>Varios fichajes al día</b><span class="note">Jornada con almuerzo, café, salidas y contador</span></span>
+        <span class="sw" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="tgl" id="tAuto" aria-pressed="true">
+        <span class="tgl-txt"><b>Guardar automáticamente</b><span class="note">Cada fichaje se guarda al momento</span></span>
+        <span class="sw" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <div class="panel" id="jPanel" hidden style="display:flex;flex-direction:column;gap:16px">
+      <div class="jhead">
+        <span class="pill off" id="jEstado">Sin iniciar</span>
+        <input type="date" id="jFecha" aria-label="Día de la jornada">
+      </div>
+      <div class="counter-box">
+        <div class="label">Tiempo de jornada</div>
+        <div class="counter mono" id="jCont">00:00:00</div>
+        <div class="mono" id="jHoras">= 0,00 h</div>
+        <div class="note" id="jPausaAct" hidden></div>
+      </div>
+      <div class="jbtns" id="jBtns"></div>
+      <div class="jstats" id="jStats"></div>
+      <div>
+        <h3 style="margin-bottom:6px">Fichajes del día</h3>
+        <ol class="marcas" id="jMarcas"></ol>
+      </div>
+      <div class="field">
+        <span class="label">Añadir un fichaje</span>
+        <div class="addrow">
+          <select id="jAddTipo" aria-label="Tipo de fichaje"></select>
+          <input type="time" id="jAddHora" aria-label="Hora del fichaje">
+          <button class="btn small" id="jAdd" type="button">Añadir</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="jNota">Nota (opcional)</label>
+        <input type="text" id="jNota" placeholder="Ej.: inventario, cubrir turno…">
+      </div>
+      <div class="savebar" id="jSaveBar" hidden>
+        <span>Cambios sin guardar</span>
+        <div class="btns"><button class="btn small" id="jDescartar" type="button">Descartar</button><button class="btn small primary" id="jGuardar" type="button">Guardar</button></div>
+      </div>
+      <p class="note" id="jInfo" style="margin:0"></p>
+      <div class="btns">
+        <button class="btn red small" id="jBorrar" type="button">Borrar día</button>
+        <button class="btn red small" id="jBorrarOk" type="button" hidden>Sí, borrar</button>
+      </div>
+    </div>
+
+    <div class="panel" id="sPanel" style="display:flex;flex-direction:column;gap:14px">
       <h2>Apuntar horas</h2>
       <div class="field">
         <label class="label" for="fFecha">Día</label>
         <input type="date" id="fFecha">
       </div>
+      <p class="note" id="sAviso" hidden style="margin:0"></p>
       <div class="grid2">
         <div class="field">
           <label class="label" for="fEnt">Entrada</label>
@@ -220,6 +314,7 @@ textarea{font-family:var(--f-mono);font-size:.8rem;min-height:110px;resize:verti
         <input type="text" id="fNota" placeholder="Ej.: inventario, cubrir turno…">
       </div>
       <div class="calc" id="fCalc"></div>
+      <p class="note" id="sInfo" style="margin:0"></p>
       <div class="btns">
         <button class="btn primary" id="fGuardar" type="button">Guardar día</button>
         <button class="btn red" id="fBorrar" type="button" hidden>Borrar día</button>
@@ -244,6 +339,7 @@ textarea{font-family:var(--f-mono);font-size:.8rem;min-height:110px;resize:verti
             <button type="button" data-t="entrada" aria-pressed="true">Entrada</button>
             <button type="button" data-t="salida" aria-pressed="false">Salida</button>
           </div>
+          <select id="pTipoSel" hidden aria-label="Tipo de fichaje"></select>
         </div>
       </div>
       <label class="drop" for="pFile" id="pDrop">
@@ -301,6 +397,15 @@ textarea{font-family:var(--f-mono);font-size:.8rem;min-height:110px;resize:verti
           <input type="number" id="aMin" min="0" step="5" inputmode="numeric">
         </div>
       </div>
+      <div class="field">
+        <span class="label">Restar del tiempo trabajado (varios fichajes)</span>
+        <div class="chks">
+          <label class="chk"><input type="checkbox" id="aDescAlm"> Almuerzo</label>
+          <label class="chk"><input type="checkbox" id="aDescCafe"> Café</label>
+          <label class="chk"><input type="checkbox" id="aDescSal"> Salidas</label>
+        </div>
+        <span class="note">Si no marcas nada, las pausas se apuntan y se suman, pero no cambian el tiempo de jornada.</span>
+      </div>
       <div class="btns"><button class="btn primary" id="aGuardar" type="button">Guardar ajustes</button></div>
     </div>
     <div class="panel" style="display:flex;flex-direction:column;gap:14px">
@@ -336,11 +441,12 @@ const LS='misHorasExtra.v1';
 
 function defCfg(){
   const h={};for(let d=0;d<7;d++)h[d]={on:d>=1&&d<=5,ini:'08:00',fin:'16:00'};
-  return {horario:h,precio:15,precioLibre:null,descanso:0,minExtra:0,nombre:'',empresa:''};
+  return {horario:h,precio:15,precioLibre:null,descanso:0,minExtra:0,nombre:'',empresa:'',multi:false,autoGuardar:true,desc:{alm:false,cafe:false,sal:false}};
 }
 function mergeCfg(v){const c=defCfg();if(!v)return c;
   if(v.horario)for(let d=0;d<7;d++)if(v.horario[d])c.horario[d]={...c.horario[d],...v.horario[d]};
-  ['precio','precioLibre','descanso','minExtra','nombre','empresa'].forEach(k=>{if(v[k]!==undefined)c[k]=v[k]});return c;}
+  ['precio','precioLibre','descanso','minExtra','nombre','empresa','multi','autoGuardar'].forEach(k=>{if(v[k]!==undefined)c[k]=v[k]});
+  if(v.desc)c.desc={...c.desc,...v.desc};return c;}
 
 let cfg=defCfg(), dias={};
 
@@ -354,9 +460,10 @@ const fmtH=m=>{m=Math.round(m||0);const s=m<0?'-':'';m=Math.abs(m);return s+Math
 const eur=v=>(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 const dow=iso=>new Date(iso+'T12:00:00').getDay();
 
-function calc(fecha,ent,sal){
+function calc(fecha,ent,sal){return calcMin(fecha,dur(ent,sal))}
+function calcMin(fecha,bruto){
   const d=dow(fecha), h=cfg.horario[d], desc=Number(cfg.descanso)||0;
-  const bruto=dur(ent,sal);
+  if(bruto!=null&&!isFinite(bruto))bruto=null;
   const r={libre:!h.on,trab:null,prev:0,extra:0,falta:0,gan:0};
   if(h.on){const p=dur(h.ini,h.fin);r.prev=Math.max(0,(p||0)-desc)}
   if(bruto==null)return r;
@@ -369,6 +476,66 @@ function calc(fecha,ent,sal){
   r.gan=ex/60*precio;
   return r;
 }
+
+/* ---------- motor de jornada ---------- */
+const TIPOS={inicio:'Inicio jornada',alm_ini:'Inicio almuerzo',alm_fin:'Final almuerzo',cafe_ini:'Inicio café',cafe_fin:'Final café',salida:'Salida',entrada:'Entrada',fin:'Fin jornada'};
+const ABRE={alm_ini:'alm',cafe_ini:'cafe',salida:'sal'};
+const CIERRA={alm_fin:'alm',cafe_fin:'cafe',entrada:'sal'};
+const CIERRE_DE={alm:'alm_fin',cafe:'cafe_fin',sal:'entrada'};
+const NOMP={alm:'Almuerzo',cafe:'Café',sal:'Salida'};
+const EST={alm:'En almuerzo',cafe:'En café',sal:'Fuera'};
+const PRIO={inicio:0,fin:9};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const isoDe=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const ayerISO=()=>{const d=new Date();d.setDate(d.getDate()-1);return isoDe(d)};
+const hms=ms=>{const s=Math.max(0,Math.floor(ms/1000));return pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60)};
+const decH=ms=>(Math.max(0,ms)/3600000).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' h';
+const hm=ms=>fmtH(ms/60000);
+const horaDe=ts=>{const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())};
+function tsDe(fecha,h,im){const m=toMin(h);if(m==null)return null;let t=new Date(fecha+'T00:00:00').getTime()+m*60000;if(im!=null&&m<im)t+=86400000;return t}
+function marcasOrd(d){
+  const ms=(d.marcas||[]).filter(x=>TIPOS[x.t]&&toMin(x.h)!=null);
+  const ini=ms.find(x=>x.t==='inicio');const im=ini?toMin(ini.h):null;
+  return ms.map(x=>({...x,_ts:tsDe(d.fecha,x.h,x.t==='inicio'?null:im)+(x.s||0)*1000}))
+    .sort((a,b)=>a._ts-b._ts||((PRIO[a.t]??5)-(PRIO[b.t]??5)));
+}
+function estado(d,now){
+  const ms=marcasOrd(d),ini=ms.find(x=>x.t==='inicio'),fin=ms.find(x=>x.t==='fin');
+  const e={ms,ini,fin,p:{alm:0,cafe:0,sal:0},n:{alm:0,cafe:0,sal:0},abierta:null,desde:0,jornada:0,running:!!ini&&!fin};
+  if(!ini)return e;
+  const end=fin?fin._ts:(now||Date.now());
+  let open=null,ot=0;
+  ms.forEach(x=>{
+    if(x._ts<ini._ts||x._ts>end)return;
+    if(ABRE[x.t]){if(open)e.p[open]+=x._ts-ot;open=ABRE[x.t];ot=x._ts;e.n[open]++}
+    else if(CIERRA[x.t]&&open===CIERRA[x.t]){e.p[open]+=x._ts-ot;open=null}
+  });
+  if(open){e.p[open]+=Math.max(0,end-ot);if(!fin){e.abierta=open;e.desde=ot}}
+  e.jornada=Math.max(0,end-ini._ts);
+  return e;
+}
+const pausaTot=e=>e.p.alm+e.p.cafe+e.p.sal;
+const descMs=e=>['alm','cafe','sal'].reduce((t,k)=>t+(cfg.desc&&cfg.desc[k]?e.p[k]:0),0);
+const tieneMarcas=d=>!!(d&&Array.isArray(d.marcas)&&d.marcas.length);
+const tienePausas=d=>!!(d&&Array.isArray(d.marcas)&&d.marcas.some(x=>x.t!=='inicio'&&x.t!=='fin'));
+function calcDoc(f,d,now){
+  if(tieneMarcas(d)){
+    const e=estado(d,now);
+    if(!e.ini||(e.running&&!now)){const r=calcMin(f,null);r.e=e;r.enCurso=e.running;r.pausas=pausaTot(e)/60000;return r}
+    const r=calcMin(f,(e.jornada-descMs(e))/60000);r.e=e;r.pausas=pausaTot(e)/60000;return r;
+  }
+  return calc(f,d.entrada,d.salida);
+}
+function detallePausas(d){
+  const out=[];let open=null,h0='';
+  marcasOrd(d).forEach(x=>{
+    if(ABRE[x.t]){if(open)out.push(NOMP[open]+' '+h0+'–');open=ABRE[x.t];h0=x.h}
+    else if(CIERRA[x.t]&&open===CIERRA[x.t]){out.push(NOMP[open]+' '+h0+'–'+x.h);open=null}
+  });
+  if(open)out.push(NOMP[open]+' '+h0+'–');
+  return out.join(', ');
+}
+function siguienteTipo(d){const e=estado(d||{fecha:hoyISO(),marcas:[]});if(!e.ini||e.fin)return 'inicio';if(e.abierta)return CIERRE_DE[e.abierta];return 'fin'}
 
 let toastT;
 function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
@@ -387,10 +554,11 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.service
 
 /* ---------- pestañas ---------- */
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.v)));
-function show(v){
+function show(v,f){
   document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));
   document.querySelectorAll('section.view').forEach(s=>s.hidden=s.id!=='v-'+v);
-  if(v==='fichar')loadForm($('#fFecha').value||hoyISO());
+  if(v==='fichar')prepararFichar(f);
+  if(v==='foto'&&cfg.multi)$('#pTipoSel').value=siguienteTipo(dias[$('#pFecha').value]||(draft&&draft.fecha===$('#pFecha').value?draft:null));
 }
 
 /* ---------- resumen ---------- */
@@ -400,15 +568,17 @@ function render(){
   const mes=$('#mes').value||hoyISO().slice(0,7);
   const fechas=Object.keys(dias).filter(f=>f.startsWith(mes)).sort().reverse();
   let tT=0,tE=0,tG=0;
-  const rows=fechas.map(f=>{const d=dias[f];const r=calc(f,d.entrada,d.salida);
+  const rows=fechas.map(f=>{const d=dias[f];const r=calcDoc(f,d);
     if(r.trab!=null){tT+=r.trab;tE+=r.extra;tG+=r.gan}
     let est='';
-    if(r.trab==null)est='<span class="pill falta">Falta '+(d.entrada?'salida':'entrada')+'</span>';
+    if(r.enCurso)est='<span class="pill run">En curso</span>';
+    else if(r.trab==null)est='<span class="pill falta">Falta '+(d.entrada?'salida':'entrada')+'</span>';
     else if(r.extra>0)est='<span class="pill extra">+'+fmtH(r.extra)+'</span>';
     else if(r.falta>0)est='<span class="muted">−'+fmtH(r.falta)+'</span>';
     else est='<span class="muted">—</span>';
     const dd=new Date(f+'T12:00:00');
-    return '<tr class="rowbtn" data-f="'+f+'"><td><b>'+DCORTO[dd.getDay()]+' '+dd.getDate()+'</b>'+(r.libre?' <span class="pill libre">libre</span>':'')+'</td>'+
+    const pz=r.pausas>0?'<div class="note" style="font-size:.75rem">Pausas '+fmtH(r.pausas)+'</div>':'';
+    return '<tr class="rowbtn" data-f="'+f+'"><td><b>'+DCORTO[dd.getDay()]+' '+dd.getDate()+'</b>'+(r.libre?' <span class="pill libre">libre</span>':'')+pz+'</td>'+
       '<td class="mono">'+(d.entrada||'--:--')+'</td><td class="mono">'+(d.salida||'--:--')+'</td>'+
       '<td class="num mono hide-sm">'+(r.trab!=null?fmtH(r.trab):'')+'</td><td class="num">'+est+'</td>'+
       '<td class="num mono">'+(r.gan>0?eur(r.gan):'')+'</td></tr>';});
@@ -421,41 +591,185 @@ function render(){
     $('#lista').innerHTML='<div class="empty"><strong>Aún no hay fichajes este mes.</strong><br>Apunta tus horas en <b>Fichar</b> o haz una foto al reloj en <b>Foto</b>.<br><br><span class="note">Ejemplo: con horario de 08:00 a 16:00 y salida a las 18:30, se cuentan 2 h 30 extra; a 15 €/h son 37,50 €.</span></div>';
   }else{
     $('#lista').innerHTML='<div class="card-list"><table><thead><tr><th>Día</th><th>Entrada</th><th>Salida</th><th class="num hide-sm">Trabajado</th><th class="num">Extra</th><th class="num">€</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
-    $('#lista').querySelectorAll('tr.rowbtn').forEach(tr=>tr.addEventListener('click',()=>{$('#fFecha').value=tr.dataset.f;show('fichar')}));
+    $('#lista').querySelectorAll('tr.rowbtn').forEach(tr=>tr.addEventListener('click',()=>show('fichar',tr.dataset.f)));
   }
   updCalc();
 }
 
-/* ---------- fichar manual ---------- */
+/* ---------- fichar: modo sencillo ---------- */
 $('#fFecha').value=hoyISO();
+let sT;
 function loadForm(f){
   $('#fFecha').value=f;const d=dias[f]||{};
   $('#fEnt').value=d.entrada||'';$('#fSal').value=d.salida||'';$('#fNota').value=d.nota||'';
-  $('#fBorrar').hidden=!dias[f];$('#fBorrarOk').hidden=true;updCalc();
+  const bloq=tienePausas(d);
+  ['#fEnt','#fSal','#nowEnt','#nowSal','#fGuardar'].forEach(s=>$(s).disabled=bloq);
+  $('#sAviso').hidden=!bloq;
+  $('#sAviso').textContent=bloq?'Este día tiene fichajes de jornada (almuerzo, café o salidas). Activa "Varios fichajes al día" para editarlo.':'';
+  $('#fBorrar').hidden=!dias[f];$('#fBorrarOk').hidden=true;updCalc();pintarSimpleInfo();
+}
+function pintarSimpleInfo(){
+  $('#fGuardar').hidden=!!cfg.autoGuardar;
+  $('#sInfo').textContent=cfg.autoGuardar?'Se guarda automáticamente al escribir las horas.':'Pulsa Guardar día para guardar.';
 }
 $('#fFecha').addEventListener('change',()=>loadForm($('#fFecha').value));
-['#fEnt','#fSal'].forEach(s=>$(s).addEventListener('input',updCalc));
-$('#nowEnt').addEventListener('click',()=>{$('#fFecha').value=hoyISO();loadForm(hoyISO());$('#fEnt').value=ahora();updCalc()});
-$('#nowSal').addEventListener('click',()=>{const f=hoyISO();if($('#fFecha').value!==f)loadForm(f);$('#fSal').value=ahora();updCalc()});
+function formChanged(){updCalc();if(!cfg.autoGuardar)return;clearTimeout(sT);sT=setTimeout(()=>guardarSimple(true),600)}
+['#fEnt','#fSal','#fNota'].forEach(s=>$(s).addEventListener('input',formChanged));
+$('#nowEnt').addEventListener('click',()=>{loadForm(hoyISO());$('#fEnt').value=ahora();formChanged();if(!cfg.autoGuardar)toast('Entrada '+ahora()+'. Pulsa Guardar día')});
+$('#nowSal').addEventListener('click',()=>{const f=hoyISO();if($('#fFecha').value!==f)loadForm(f);$('#fSal').value=ahora();formChanged();if(!cfg.autoGuardar)toast('Salida '+ahora()+'. Pulsa Guardar día')});
 function updCalc(){
   const f=$('#fFecha').value;if(!f){$('#fCalc').innerHTML='';return}
   const h=cfg.horario[dow(f)];
-  const r=calc(f,$('#fEnt').value,$('#fSal').value);
+  const d=dias[f];
+  const r=tienePausas(d)?calcDoc(f,d):calc(f,$('#fEnt').value,$('#fSal').value);
   $('#fCalc').innerHTML=
     '<div><div class="label">Tu horario</div><div class="v">'+(h.on?h.ini+'–'+h.fin:'Libre')+'</div></div>'+
     '<div><div class="label">Trabajado</div><div class="v">'+(r.trab!=null?fmtH(r.trab):'—')+'</div></div>'+
     '<div><div class="label">Extra</div><div class="v" style="color:var(--ok)">'+(r.trab!=null?fmtH(r.extra)+'<br>'+eur(r.gan):'—')+'</div></div>';
 }
-$('#fGuardar').addEventListener('click',async()=>{
-  const f=$('#fFecha').value;if(!f){toast('Elige un día');return}
+async function guardarSimple(auto){
+  const f=$('#fFecha').value;if(!f){if(!auto)toast('Elige un día');return}
+  if(tienePausas(dias[f]))return;
   const e=$('#fEnt').value,s=$('#fSal').value;
-  if(!e&&!s){toast('Pon al menos la entrada o la salida');return}
+  if(!e&&!s){if(!auto)toast('Pon al menos la entrada o la salida');return}
   const prev=dias[f]||{};
-  const ok=await guardarDia({...prev,fecha:f,entrada:e||'',salida:s||'',nota:$('#fNota').value.trim(),origen:prev.origen||'manual'});
-  if(ok){toast('Día guardado');$('#fBorrar').hidden=false}
-});
+  const doc={...prev,fecha:f,entrada:e||'',salida:s||'',nota:$('#fNota').value.trim(),origen:prev.origen||'manual'};
+  delete doc.marcas;
+  await guardarDia(doc);
+  $('#fBorrar').hidden=false;
+  toast(auto?'Guardado':'Día guardado');
+}
+$('#fGuardar').addEventListener('click',()=>guardarSimple(false));
 $('#fBorrar').addEventListener('click',()=>{$('#fBorrarOk').hidden=false});
 $('#fBorrarOk').addEventListener('click',async()=>{await borrarDia($('#fFecha').value);loadForm($('#fFecha').value);toast('Día borrado')});
+
+/* ---------- fichar: jornada con varios fichajes ---------- */
+const LSD='misHorasExtra.borrador';
+let draft=null,dirty=false,nT;
+$('#jAddTipo').innerHTML=Object.keys(TIPOS).map(k=>'<option value="'+k+'">'+TIPOS[k]+'</option>').join('');
+$('#pTipoSel').innerHTML=$('#jAddTipo').innerHTML;
+function docBase(f){
+  const d=dias[f]?JSON.parse(JSON.stringify(dias[f])):{fecha:f,entrada:'',salida:'',nota:''};
+  if(!Array.isArray(d.marcas)){d.marcas=[];
+    if(d.entrada)d.marcas.push({id:uid(),t:'inicio',h:d.entrada});
+    if(d.salida)d.marcas.push({id:uid(),t:'fin',h:d.salida});}
+  return d;
+}
+function sync(d){const ms=marcasOrd(d),i=ms.find(x=>x.t==='inicio'),fn=ms.find(x=>x.t==='fin');d.entrada=i?i.h:'';d.salida=fn?fn.h:''}
+function guardarBorrador(){try{if(dirty)localStorage.setItem(LSD,JSON.stringify(draft));else localStorage.removeItem(LSD)}catch(e){}}
+function commit(msg){
+  sync(draft);
+  if(!draft.marcas.length&&!draft.nota)delete dias[draft.fecha];
+  else dias[draft.fecha]=JSON.parse(JSON.stringify(draft));
+  saveLocal();dirty=false;guardarBorrador();render();pintarJ();if(msg)toast(msg);
+}
+function cambiar(msg){sync(draft);if(cfg.autoGuardar)commit(msg);else{dirty=true;guardarBorrador();pintarJ();if(msg)toast(msg)}}
+function cargarJ(f){
+  if(dirty&&draft&&draft.fecha!==f){toast('Guarda o descarta los cambios antes de cambiar de día');$('#jFecha').value=draft.fecha;return false}
+  if(!(dirty&&draft&&draft.fecha===f))draft=docBase(f);
+  $('#jFecha').value=f;$('#jNota').value=draft.nota||'';$('#jBorrarOk').hidden=true;$('#jAddHora').value=ahora();
+  $('#jAddTipo').value=siguienteTipo(draft)==='inicio'&&estado(draft).ini?'salida':siguienteTipo(draft);
+  pintarJ();return true;
+}
+function fechaInicial(){
+  if(draft&&dirty)return draft.fecha;
+  for(const f of [hoyISO(),ayerISO()]){const d=dias[f];if(tieneMarcas(d)&&estado(d).running)return f}
+  return hoyISO();
+}
+function prepararFichar(f){if(cfg.multi)cargarJ(f||fechaInicial());else loadForm(f||$('#fFecha').value||hoyISO())}
+const dotCls=t=>t==='fin'?'f':ABRE[t]?'p':'e';
+const boton=(a,txt,cls)=>'<button type="button" class="btn '+(cls||'')+'" data-a="'+a+'">'+txt+'</button>';
+function pintarJ(){
+  if(!draft)return;
+  const e=estado(draft);
+  const live=draft.fecha===hoyISO()||(e.running&&draft.fecha===ayerISO());
+  const pe=$('#jEstado');
+  if(!e.ini){pe.className='pill off';pe.textContent='Sin iniciar'}
+  else if(e.fin){pe.className='pill libre';pe.textContent='Jornada terminada'}
+  else if(e.abierta){pe.className='pill pau';pe.textContent=EST[e.abierta]}
+  else{pe.className='pill run';pe.textContent='Trabajando'}
+  let b='';
+  if(!live)b=boton('hoy','Ir a hoy','wide')+'<p class="note wide" style="margin:0;text-align:center">Para un día pasado, añade o corrige los fichajes en la lista.</p>';
+  else if(!e.ini)b=boton('inicio','Iniciar jornada','primary wide');
+  else if(e.fin)b='<p class="note wide" style="margin:0;text-align:center">Jornada terminada a las '+e.fin.h+'</p>'+boton('reabrir','Reabrir jornada','wide');
+  else if(e.abierta)b=boton(CIERRE_DE[e.abierta],TIPOS[CIERRE_DE[e.abierta]],'ok wide')+boton('fin','Finalizar jornada','red wide');
+  else b=boton('alm_ini','Inicio almuerzo','pausa')+boton('cafe_ini','Inicio café','pausa')+boton('salida','Salida','')+boton('fin','Finalizar jornada','redfill');
+  $('#jBtns').innerHTML=b;
+  $('#jMarcas').innerHTML=e.ms.length?e.ms.map(x=>'<li><span class="dot '+dotCls(x.t)+'"></span><span>'+TIPOS[x.t]+'</span><input type="time" value="'+x.h+'" data-id="'+x.id+'" aria-label="Hora de '+TIPOS[x.t]+'"><button class="del" type="button" data-del="'+x.id+'" aria-label="Borrar '+TIPOS[x.t]+'">×</button></li>').join('')
+    :'<li style="display:block" class="note">Aún no hay fichajes este día. Pulsa <b>Iniciar jornada</b> o añade uno abajo.</li>';
+  $('#jSaveBar').hidden=!dirty;
+  const des=['alm','cafe','sal'].filter(k=>cfg.desc&&cfg.desc[k]).map(k=>NOMP[k].toLowerCase());
+  $('#jInfo').textContent=(cfg.autoGuardar?'Cada fichaje se guarda al momento. ':'Guardado automático desactivado: pulsa Guardar para confirmar. ')+
+    (des.length?'Del tiempo trabajado se resta: '+des.join(', ')+'.':'Las pausas se suman aparte y no restan tiempo a la jornada.');
+  $('#jBorrar').hidden=!dias[draft.fecha]&&!draft.marcas.length;
+  pintarCont();
+}
+function pintarCont(){
+  if(!draft)return;
+  const now=Date.now(),e=estado(draft,now);
+  $('#jCont').textContent=hms(e.jornada);
+  $('#jHoras').textContent='= '+decH(e.jornada);
+  const pa=$('#jPausaAct');
+  if(e.abierta){pa.hidden=false;pa.textContent=EST[e.abierta]+' desde las '+horaDe(e.desde)+' · '+hms(now-e.desde)}else pa.hidden=true;
+  const r=calcDoc(draft.fecha,draft,now),h=cfg.horario[dow(draft.fecha)];
+  const st=(l,v,c)=>'<div><div class="label">'+l+'</div><div class="v"'+(c?' style="color:var(--'+c+')"':'')+'>'+v+'</div></div>';
+  const cnt=k=>e.n[k]>1?' ('+e.n[k]+')':'';
+  $('#jStats').innerHTML=st('Almuerzo',hm(e.p.alm)+cnt('alm'))+st('Café',hm(e.p.cafe)+cnt('cafe'))+st('Salidas',hm(e.p.sal)+cnt('sal'))+
+    st('Tu horario',h.on?h.ini+'–'+h.fin:'Libre')+st('Trabajado',r.trab!=null?fmtH(r.trab):'—')+st('Extra',r.trab!=null?fmtH(r.extra)+'<br>'+eur(r.gan):'—','ok');
+}
+$('#jBtns').addEventListener('click',ev=>{
+  const b=ev.target.closest('button[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='hoy'){cargarJ(hoyISO());return}
+  if(a==='reabrir'){draft.marcas=draft.marcas.filter(x=>x.t!=='fin');cambiar('Jornada reabierta');return}
+  if(a==='inicio'&&draft.fecha!==hoyISO()&&!cargarJ(hoyISO()))return;
+  const d=new Date(),h=pad(d.getHours())+':'+pad(d.getMinutes());
+  draft.marcas.push({id:uid(),t:a,h,s:d.getSeconds()});
+  cambiar(TIPOS[a]+' · '+h);
+});
+$('#jMarcas').addEventListener('change',ev=>{
+  const i=ev.target.closest('input[data-id]');if(!i||!i.value)return;
+  const m=draft.marcas.find(x=>x.id===i.dataset.id);if(!m)return;
+  m.h=i.value;delete m.s;cambiar('Hora cambiada');
+});
+$('#jMarcas').addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-del]');if(!b)return;
+  const m=draft.marcas.find(x=>x.id===b.dataset.del);
+  draft.marcas=draft.marcas.filter(x=>x.id!==b.dataset.del);
+  cambiar((m?TIPOS[m.t]:'Fichaje')+' borrado');
+});
+$('#jAdd').addEventListener('click',()=>{
+  const t=$('#jAddTipo').value,h=$('#jAddHora').value;if(!h){toast('Pon la hora');return}
+  if((t==='inicio'||t==='fin')&&draft.marcas.some(x=>x.t===t)){toast('Ya hay '+TIPOS[t].toLowerCase()+'. Cambia su hora en la lista.');return}
+  draft.marcas.push({id:uid(),t,h});cambiar(TIPOS[t]+' añadido');
+});
+$('#jFecha').addEventListener('change',()=>{if($('#jFecha').value)cargarJ($('#jFecha').value)});
+$('#jNota').addEventListener('input',()=>{draft.nota=$('#jNota').value.trim();clearTimeout(nT);nT=setTimeout(()=>cambiar(),700)});
+$('#jGuardar').addEventListener('click',()=>commit('Día guardado'));
+$('#jDescartar').addEventListener('click',()=>{const f=draft.fecha;dirty=false;guardarBorrador();draft=null;cargarJ(f);toast('Cambios descartados')});
+$('#jBorrar').addEventListener('click',()=>{$('#jBorrarOk').hidden=false});
+$('#jBorrarOk').addEventListener('click',()=>{const f=draft.fecha;delete dias[f];saveLocal();dirty=false;guardarBorrador();draft=null;cargarJ(f);render();toast('Día borrado')});
+setInterval(()=>{if(cfg.multi&&draft&&!$('#v-fichar').hidden&&estado(draft).running)pintarCont()},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cfg.multi&&draft)pintarJ()});
+
+/* ---------- interruptores ---------- */
+function pintarModo(){
+  $('#tMulti').setAttribute('aria-pressed',String(!!cfg.multi));
+  $('#tAuto').setAttribute('aria-pressed',String(!!cfg.autoGuardar));
+  $('#jPanel').hidden=!cfg.multi;$('#sPanel').hidden=!!cfg.multi;
+  $('#pTipo').hidden=!!cfg.multi;$('#pTipoSel').hidden=!cfg.multi;
+  pintarSimpleInfo();
+}
+$('#tMulti').addEventListener('click',()=>{
+  if(cfg.multi&&dirty){toast('Guarda o descarta los cambios primero');return}
+  cfg.multi=!cfg.multi;saveLocal();pintarModo();prepararFichar();
+  toast(cfg.multi?'Varios fichajes activado':'Varios fichajes desactivado');
+});
+$('#tAuto').addEventListener('click',()=>{
+  cfg.autoGuardar=!cfg.autoGuardar;saveLocal();
+  if(cfg.autoGuardar&&dirty)commit('Cambios guardados');
+  pintarModo();pintarJ();
+  toast(cfg.autoGuardar?'Guardado automático activado':'Guardado automático desactivado');
+});
 
 /* ---------- foto ---------- */
 let tipo='entrada',blob=null;
@@ -477,7 +791,7 @@ function reducir(file){return new Promise(res=>{
 function horarioTxt(){const h=cfg.horario[dow($('#pFecha').value||hoyISO())];return h.on?h.ini+'-'+h.fin:'no definido'}
 function blobB64(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(b)})}
 async function leerConClaude(key){
-  const prompt='La imagen es una foto de un reloj (puede ser de agujas, digital o la pantalla de una máquina de fichar). Lee la hora que marca. Si es de agujas y no se sabe si es mañana o tarde, elige lo más probable para una hora de '+tipo+' al trabajo con horario '+horarioTxt()+'. Responde SOLO con JSON: {"hora":"HH:MM" en 24 h o null si no se ve un reloj, "fecha":"YYYY-MM-DD" o null, "seguridad":"alta"|"media"|"baja", "comentario":"frase corta en español"}';
+  const prompt='La imagen es una foto de un reloj (puede ser de agujas, digital o la pantalla de una máquina de fichar). Lee la hora que marca. Si es de agujas y no se sabe si es mañana o tarde, elige lo más probable para una hora de '+(cfg.multi?TIPOS[$('#pTipoSel').value].toLowerCase():tipo)+' al trabajo con horario '+horarioTxt()+'. Responde SOLO con JSON: {"hora":"HH:MM" en 24 h o null si no se ve un reloj, "fecha":"YYYY-MM-DD" o null, "seguridad":"alta"|"media"|"baja", "comentario":"frase corta en español"}';
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:300,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:await blobB64(blob)}},{type:'text',text:prompt}]}]})});
   if(!r.ok){const t=await r.text();throw new Error(r.status===401?'La clave API no es válida':'Error de la API ('+r.status+')')}
@@ -511,8 +825,18 @@ $('#pLeer').addEventListener('click',async()=>{
 });
 $('#pGuardar').addEventListener('click',async()=>{
   const f=$('#pFecha').value,h=$('#pHora').value;if(!f||!h){toast('Falta el día o la hora');return}
+  if(cfg.multi){
+    const t=$('#pTipoSel').value;
+    if(draft&&draft.fecha===f){draft.marcas.push({id:uid(),t,h});cambiar()}
+    else{const d=docBase(f);d.marcas.push({id:uid(),t,h});sync(d);dias[f]=d;saveLocal();render()}
+    toast(TIPOS[t]+' guardado: '+h);
+    $('#pRes').hidden=true;$('#pImg').hidden=true;$('#pBtns').hidden=true;$('#pDrop').hidden=false;$('#pFile').value='';blob=null;
+    $('#pTipoSel').value=siguienteTipo(draft&&draft.fecha===f?draft:dias[f]);
+    return;
+  }
   const prev=dias[f]||{fecha:f,entrada:'',salida:'',nota:''};
-  const doc={...prev,fecha:f,origen:'foto'};doc[tipo]=h;
+  if(tienePausas(prev)){toast('Ese día tiene fichajes de jornada. Activa "Varios fichajes al día"');return}
+  const doc={...prev,fecha:f,origen:'foto'};doc[tipo]=h;delete doc.marcas;
   if(await guardarDia(doc)){toast((tipo==='entrada'?'Entrada':'Salida')+' guardada: '+h);
     $('#pRes').hidden=true;$('#pImg').hidden=true;$('#pBtns').hidden=true;$('#pDrop').hidden=false;$('#pFile').value='';blob=null;
     if(tipo==='entrada')$('#pTipo').querySelector('[data-t=salida]').click();}
@@ -528,6 +852,7 @@ function fillAjustes(){
   ORDEN.forEach(d=>{const h=cfg.horario[d];$('#on'+d).checked=h.on;$('#ini'+d).value=h.ini;$('#fin'+d).value=h.fin;$('#ini'+d).disabled=$('#fin'+d).disabled=!h.on});
   $('#aPrecio').value=cfg.precio;$('#aDesc').value=cfg.descanso;$('#aMin').value=cfg.minExtra;
   $('#aPrecioLibre').value=cfg.precioLibre==null?'':cfg.precioLibre;
+  $('#aDescAlm').checked=!!cfg.desc.alm;$('#aDescCafe').checked=!!cfg.desc.cafe;$('#aDescSal').checked=!!cfg.desc.sal;
 }
 $('#aGuardar').addEventListener('click',()=>{
   ORDEN.forEach(d=>{cfg.horario[d]={on:$('#on'+d).checked,ini:$('#ini'+d).value||'08:00',fin:$('#fin'+d).value||'16:00'}});
@@ -535,7 +860,8 @@ $('#aGuardar').addEventListener('click',()=>{
   cfg.descanso=Math.max(0,parseInt($('#aDesc').value)||0);
   cfg.minExtra=Math.max(0,parseInt($('#aMin').value)||0);
   const pl=$('#aPrecioLibre').value.trim();cfg.precioLibre=pl===''?null:Math.max(0,parseFloat(pl)||0);
-  guardarCfg();
+  cfg.desc={alm:$('#aDescAlm').checked,cafe:$('#aDescCafe').checked,sal:$('#aDescSal').checked};
+  guardarCfg();if(draft)pintarJ();
 });
 
 $('#aKey').value=getKey();
@@ -544,7 +870,7 @@ $('#aExport').addEventListener('click',()=>{$('#aBackup').value=JSON.stringify({
 $('#aCopiar').addEventListener('click',async()=>{const t=$('#aBackup');if(!t.value)t.value=JSON.stringify({app:'mis-horas-extra',v:1,fecha:hoyISO(),cfg,dias});
   try{await navigator.clipboard.writeText(t.value);toast('Copiado')}catch(e){t.select();toast('Selecciona y copia el texto')}});
 $('#aImport').addEventListener('click',()=>{
-  try{const o=JSON.parse($('#aBackup').value);if(!o||!o.dias)throw 0;cfg=mergeCfg(o.cfg);dias=o.dias;saveLocal();fillAjustes();$('#pdfNombre').value=cfg.nombre||'';$('#pdfEmpresa').value=cfg.empresa||'';render();toast('Datos restaurados')}
+  try{const o=JSON.parse($('#aBackup').value);if(!o||!o.dias)throw 0;cfg=mergeCfg(o.cfg);dias=o.dias;saveLocal();fillAjustes();dirty=false;guardarBorrador();draft=null;pintarModo();prepararFichar();$('#pdfNombre').value=cfg.nombre||'';$('#pdfEmpresa').value=cfg.empresa||'';render();toast('Datos restaurados')}
   catch(e){toast('El texto no es una copia válida')}});
 
 /* ---------- PDF ---------- */
@@ -578,27 +904,29 @@ function crearPDF(){
   let tarifa='Precio hora extra: '+eur(Number(cfg.precio)||0);
   if(cfg.precioLibre!=null&&cfg.precioLibre!=='')tarifa+='   ·   Hora en día libre: '+eur(Number(cfg.precioLibre));
   if(Number(cfg.descanso))tarifa+='   ·   Descanso no pagado: '+cfg.descanso+' min/día';
-  doc.text(tarifa,14,y);y+=4;
+  const desP=['alm','cafe','sal'].filter(k=>cfg.desc[k]).map(k=>NOMP[k].toLowerCase());
+  if(desP.length)tarifa+='   ·   Se resta: '+desP.join(', ');
+  doc.text(tarifa,14,y,{maxWidth:W-28});y+=4;
 
   const fechas=Object.keys(dias).filter(f=>f.startsWith(mes)).sort();
-  let tT=0,tE=0,tG=0,nE=0;const body=[];
-  fechas.forEach(f=>{const d=dias[f];const r=calc(f,d.entrada,d.salida);const h=cfg.horario[dow(f)];
-    if(r.trab!=null){tT+=r.trab;tE+=r.extra;tG+=r.gan;if(r.extra>0)nE++}
+  let tT=0,tE=0,tG=0,nE=0,tP=0;const body=[];
+  fechas.forEach(f=>{const d=dias[f];const r=calcDoc(f,d);const h=cfg.horario[dow(f)];
+    if(r.trab!=null){tT+=r.trab;tE+=r.extra;tG+=r.gan;tP+=r.pausas||0;if(r.extra>0)nE++}
     if(!completo&&!(r.extra>0))return;
     const dd=new Date(f+'T12:00:00');
     const dia=DCORTO[dd.getDay()]+' '+pad(dd.getDate())+'/'+pad(mm);
-    if(completo)body.push([dia,h.on?h.ini+'–'+h.fin:'Libre',d.entrada||'—',d.salida||'—',r.trab!=null?fmtH(r.trab):'—',r.extra>0?fmtH(r.extra):'—',r.gan>0?eur(r.gan):'—',d.nota||'']);
+    if(completo)body.push([dia,h.on?h.ini+'–'+h.fin:'Libre',d.entrada||'—',r.enCurso?'en curso':(d.salida||'—'),r.pausas>0?fmtH(r.pausas):'—',r.trab!=null?fmtH(r.trab):'—',r.extra>0?fmtH(r.extra):'—',r.gan>0?eur(r.gan):'—',[tieneMarcas(d)?detallePausas(d):'',d.nota||''].filter(Boolean).join(' · ')]);
     else body.push([dia,d.entrada||'—',d.salida||'—',h.on?'Laborable':'Día libre',fmtH(r.extra),eur(r.gan),d.nota||'']);
   });
   if(!body.length)throw new Error(completo?'No hay fichajes en '+nomMes:'No hay horas extra en '+nomMes);
-  const head=completo?[['Día','Horario','Entrada','Salida','Trabajado','Extra','Ganado','Nota']]:[['Día','Entrada','Salida','Tipo de día','Horas extra','Ganado','Nota']];
-  const foot=completo?[['Total','','','',fmtH(tT),fmtH(tE),eur(tG),'']]:[['Total','','','',fmtH(tE),eur(tG),'']];
-  const right=completo?{4:{halign:'right'},5:{halign:'right'},6:{halign:'right'}}:{4:{halign:'right'},5:{halign:'right'}};
+  const head=completo?[['Día','Horario','Entrada','Salida','Pausas','Trabajado','Extra','Ganado','Pausas y notas']]:[['Día','Entrada','Salida','Tipo de día','Horas extra','Ganado','Nota']];
+  const foot=completo?[['Total','','','',fmtH(tP),fmtH(tT),fmtH(tE),eur(tG),'']]:[['Total','','','',fmtH(tE),eur(tG),'']];
+  const right=completo?{4:{halign:'right'},5:{halign:'right'},6:{halign:'right'},7:{halign:'right'}}:{4:{halign:'right'},5:{halign:'right'}};
   doc.autoTable({startY:y+4,head,body,foot,theme:'grid',margin:{left:14,right:14},
-    styles:{font:'helvetica',fontSize:completo?8.5:9.5,cellPadding:2,textColor:INK,lineColor:[210,217,226],lineWidth:.2},
+    styles:{font:'helvetica',fontSize:completo?8:9.5,cellPadding:2,textColor:INK,lineColor:[210,217,226],lineWidth:.2},
     headStyles:{fillColor:INK,textColor:255,fontStyle:'bold'},
     footStyles:{fillColor:[237,240,244],textColor:INK,fontStyle:'bold'},
-    columnStyles:Object.assign({},right,{[completo?7:6]:{cellWidth:'auto',fontSize:8,textColor:MUT}}),
+    columnStyles:Object.assign({},right,{[completo?8:6]:{cellWidth:'auto',fontSize:7.5,textColor:MUT}}),
     didParseCell:c=>{if(c.section==='foot'&&Object.keys(right).includes(String(c.column.index)))c.cell.styles.halign='right'}});
   // resumen
   let fy=doc.lastAutoTable.finalY+10;
@@ -646,7 +974,10 @@ async function compartirPDF(){
 $('#pdfCompartir').addEventListener('click',compartirPDF);
 
 $('#pdfNombre').value=cfg.nombre||'';$('#pdfEmpresa').value=cfg.empresa||'';
-fillAjustes();render();
+try{const b=JSON.parse(localStorage.getItem(LSD)||'null');if(b&&b.fecha&&Array.isArray(b.marcas)){draft=b;dirty=true}}catch(e){}
+if(dirty&&cfg.autoGuardar)commit();
+fillAjustes();pintarModo();render();
+if(cfg.multi){cargarJ(fechaInicial());if(estado(draft).running)show('fichar')}
 })();
 </script>
 </body>
