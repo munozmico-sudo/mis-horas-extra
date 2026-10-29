@@ -3,6 +3,8 @@
 App para contar las horas extra del trabajo y lo que se gana con ellas.
 
 - **Fichar**: apunta la entrada y la salida a mano o con "Fichar ahora".
+- **Varios fichajes al día** (interruptor en Fichar): botones de inicio y fin de jornada, inicio y final de almuerzo, inicio y final de café, y salidas y entradas sueltas. Contador en directo del tiempo de jornada (horas:minutos:segundos y en horas decimales). Las pausas se suman aparte y, si quieres, se restan del tiempo trabajado (Ajustes).
+- **Guardar automáticamente** (interruptor en Fichar): cada fichaje se guarda al momento; si lo desactivas, los cambios esperan a que pulses Guardar.
 - **Foto**: haz una foto al reloj y la app lee la hora de entrada o de salida.
 - **Resumen**: horas trabajadas, horas extra y ganancias de cada mes.
 - **PDF**: crea un PDF del mes con solo las horas extra o con el horario completo, para imprimir o compartir.
